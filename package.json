@@ -1,10 +1,11 @@
 {
   "name": "@opuscapita/react-filemanager",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "description": "React file manager",
   "license": "Apache-2.0",
   "repository": "OpusCapita/react-filemanager",
   "scripts": {
-    "build": "cd packages/client-react & npm i & npm run build"
+    "build": "cd packages/client-react && npm run build",
+    "prepublish": "npm run build"
   }
 }

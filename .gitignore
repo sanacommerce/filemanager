@@ -6,6 +6,7 @@
 tmp
 npm-debug.log
 /static
+lib
 node_modules
 demo.tar.gz
 .gh-pages-tmp
@@ -28,8 +29,6 @@ packages/server-nodejs/api-tests.tmp
 packages/server-nodejs/test-results
 packages/server-nodejs/test-files
 packages/server-nodejs/api-docs.tmp
-packages/connector-node-v1/lib
-packages/connector-google-drive-v2/lib
 
 # cypress.io
 cypress/videos/
