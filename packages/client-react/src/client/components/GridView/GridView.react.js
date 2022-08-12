@@ -177,7 +177,7 @@ export default class GridView extends Component {
 
           // Generate items for "loading placeholder"
           const itemsToRender = loading && height
-            ? range(Math.floor(height / ROW_HEIGHT - 1) * columnCount).map(() => ({}))
+            ? range(Math.ceil(height / ROW_HEIGHT) * columnCount).map(() => ({}))
             : items;
 
           return (
