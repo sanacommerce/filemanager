@@ -1,18 +1,18 @@
+import './FileNavigator.less';
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { SortDirection } from 'react-virtualized';
 import clickOutside from 'react-click-outside';
 import { find, isEqual } from 'lodash';
-
 import ListView from '../ListView';
+import GridView from '../GridView';
+import defaultGridCellRenderer from '../GridView/gridCellRenderer';
 import LocationBar from '../LocationBar';
 import Notifications from '../Notifications';
 import Toolbar from '../Toolbar';
 import ContextMenu from '../ContextMenu';
 import rawToReactElement from '../raw-to-react-element';
 import { createHistory, pushToHistory } from '../history';
-
-import './FileNavigator.less';
 
 function hasContext(capability, context) {
   return capability.availableInContexts && capability.availableInContexts.indexOf(context) !== -1;
@@ -26,6 +26,7 @@ const propTypes = {
   className: PropTypes.string,
   initialResourceId: PropTypes.string,
   listViewLayout: PropTypes.func,
+  gridCellRenderer: PropTypes.func,
   viewLayoutOptions: PropTypes.object,
   signInRenderer: PropTypes.func,
   onClickOutside: PropTypes.func,
@@ -47,24 +48,24 @@ const defaultProps = {
   capabilities: () => [],
   className: '',
   initialResourceId: '',
-  listViewLayout: () => {},
+  listViewLayout: () => { },
+  gridCellRenderer: defaultGridCellRenderer,
   viewLayoutOptions: {},
   signInRenderer: null,
   onClickOutside: ({ fileNavigator }) => fileNavigator.handleSelectionChange([]),
-  onResourceItemClick: () => {},
-  onResourceItemRightClick: () => {},
-  onResourceItemDoubleClick: () => {},
-  onResourceLocationChange: () => {},
-  onSelectionChange: () => {},
-  onResourceChange: () => {},
-  onResourceChildrenChange: () => {}
+  onResourceItemClick: () => { },
+  onResourceItemRightClick: () => { },
+  onResourceItemDoubleClick: () => { },
+  onResourceLocationChange: () => { },
+  onSelectionChange: () => { },
+  onResourceChange: () => { },
+  onResourceChildrenChange: () => { }
 };
 
 const MONITOR_API_AVAILABILITY_TIMEOUT = 16;
 
 @clickOutside
-export default
-class FileNavigator extends Component {
+export default class FileNavigator extends Component {
   state = {
     apiInitialized: false,
     apiSignedIn: false,
@@ -81,7 +82,8 @@ class FileNavigator extends Component {
     selection: [],
     sortBy: 'title',
     sortDirection: SortDirection.ASC,
-    initializedCapabilities: []
+    initializedCapabilities: [],
+    viewMode: 'list',
   };
 
   componentDidMount() {
@@ -129,7 +131,8 @@ class FileNavigator extends Component {
       apiSignedIn,
       initializedCapabilities,
       sortBy: viewLayoutOptions.initialSortBy || 'title',
-      sortDirection: viewLayoutOptions.initialSortDirection || 'ASC'
+      sortDirection: viewLayoutOptions.initialSortDirection || SortDirection.ASC,
+      viewMode: viewLayoutOptions.initialViewMode || 'list',
     }, _ => {
       if (apiSignedIn) {
         this.handleApiReady();
@@ -247,6 +250,14 @@ class FileNavigator extends Component {
     return api.getChildrenForId(apiOptions, { id, sortBy, sortDirection });
   }
 
+  getResourceViewMode(resource) {
+    const { api, apiOptions } = this.props;
+
+    return api.getResourceViewMode
+      ? api.getResourceViewMode(apiOptions, resource)
+      : this.state.viewMode;
+  }
+
   getResourceChildrenBySelection(selection) {
     const { resourceChildren } = this.state;
     const filteredResourceItems = resourceChildren.filter((o) => selection.indexOf(o.id) !== -1);
@@ -273,7 +284,7 @@ class FileNavigator extends Component {
   };
 
   handleResourceChange = (resource) => {
-    this.setStateAsync({ resource });
+    this.setStateAsync({ resource, viewMode: this.getResourceViewMode(resource) });
     this.props.onResourceChange(resource);
   };
 
@@ -321,7 +332,7 @@ class FileNavigator extends Component {
     const { api, apiOptions } = this.props;
     const { loadingView } = this.state;
 
-    if ((e.which === 13 || e.which === 39) && !loadingView) { // Enter key or Right Arrow
+    if (e.which === 13 && !loadingView) { // Enter
       const { selection } = this.state;
       if (selection.length === 1) {
         // Navigate to selected resource if selected resource is single and is directory
@@ -340,7 +351,7 @@ class FileNavigator extends Component {
       }
     }
 
-    if ((e.which === 8 || e.which === 37) && !loadingView) { // Backspace or Left Arrow
+    if (e.which === 8 && !loadingView) { // Backspace
       // Navigate to parent directory
       const { resource } = this.state;
       const parentId = await api.getParentIdForResource(apiOptions, resource);
@@ -398,7 +409,7 @@ class FileNavigator extends Component {
           id: capability.id,
           icon: capability.icon,
           label: capability.label || '',
-          onClick: capability.handler || (() => {}),
+          onClick: capability.handler || (() => { }),
         });
 
         if (!isDataView) {
@@ -408,12 +419,18 @@ class FileNavigator extends Component {
       });
   };
 
+  handleViewModeChange = viewMode => {
+    this.setStateAsync({ viewMode });
+    this.props.onResourceViewModeChange && this.props.onResourceViewModeChange(this.state.resource, viewMode);
+  };
+
   render() {
     const {
       id,
       apiOptions,
       className,
       listViewLayout,
+      gridCellRenderer,
       signInRenderer,
       viewLayoutOptions
     } = this.props;
@@ -466,6 +483,25 @@ class FileNavigator extends Component {
     const rowContextMenuId = `row-context-menu-${id}`;
     const filesViewContextMenuId = `files-view-context-menu-${id}`;
 
+    const viewProps = {
+      rowContextMenuId,
+      filesViewContextMenuId,
+      onKeyDown: this.handleViewKeyDown,
+      onRowClick: this.handleResourceItemClick,
+      onRowRightClick: this.handleResourceItemRightClick,
+      onRowDoubleClick: this.handleResourceItemDoubleClick,
+      onSelection: this.handleSelectionChange,
+      onSort: this.handleSort,
+      onRef: this.handleViewRef,
+      loading: loadingView,
+      selection,
+      sortBy,
+      sortDirection,
+      items: resourceChildren,
+      layoutOptions: viewLayoutOptions,
+      locale: apiOptions.locale,
+    };
+
     return (
       <div
         id={id}
@@ -483,33 +519,23 @@ class FileNavigator extends Component {
             onMoveForward={this.handleHistoryChange}
             onMoveBackward={this.handleHistoryChange}
             locale={apiOptions.locale}
+            viewMode={this.state.viewMode}
+            onViewModeChange={this.handleViewModeChange}
           />
         </div>
         <div className="oc-fm--file-navigator__view">
-          <ListView
-            rowContextMenuId={rowContextMenuId}
-            filesViewContextMenuId={filesViewContextMenuId}
-            onKeyDown={this.handleViewKeyDown}
-            onRowClick={this.handleResourceItemClick}
-            onRowRightClick={this.handleResourceItemRightClick}
-            onRowDoubleClick={this.handleResourceItemDoubleClick}
-            onSelection={this.handleSelectionChange}
-            onSort={this.handleSort}
-            onRef={this.handleViewRef}
-            loading={loadingView}
-            selection={selection}
-            sortBy={sortBy}
-            sortDirection={sortDirection}
-            items={resourceChildren}
-            layout={listViewLayout}
-            layoutOptions={viewLayoutOptions}
-            locale={apiOptions.locale}
-          >
-            <Notifications
-              className="oc-fm--file-navigator__notifications"
-              notifications={notifications}
-            />
-          </ListView>
+          {this.state.viewMode === 'grid'
+            ? (
+              <GridView {...viewProps} cellRenderer={gridCellRenderer}>
+                <Notifications className="oc-fm--file-navigator__notifications" notifications={notifications} />
+              </GridView>
+            )
+            : (
+              <ListView {...viewProps} layout={listViewLayout}>
+                <Notifications className="oc-fm--file-navigator__notifications" notifications={notifications} />
+              </ListView>
+            )
+          }
         </div>
         <div className="oc-fm--file-navigator__location-bar">
           <LocationBar

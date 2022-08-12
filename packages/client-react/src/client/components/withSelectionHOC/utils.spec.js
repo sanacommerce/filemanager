@@ -12,7 +12,7 @@ import {
   removeFirstFromSelection,
   selectFirstItem,
   selectLastItem
-} from './utils';
+} from '../ListView/utils';
 
 describe('<ListView /> utils', () => {
   const selection = [

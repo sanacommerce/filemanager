@@ -28,7 +28,9 @@ export default class WithSelection extends PureComponent {
     onKeyDown: PropTypes.func,
     items: PropTypes.arrayOf(PropTypes.object),
     idPropName: PropTypes.string,
-    selection: PropTypes.array
+    selection: PropTypes.array,
+    viewMode: PropTypes.string,
+    columnCount: PropTypes.number,
   }
 
   static defaultProps = {
@@ -39,7 +41,9 @@ export default class WithSelection extends PureComponent {
     onRef: noop,
     items: [],
     idPropName: 'id',
-    selection: []
+    selection: [],
+    viewMode: 'list',
+    columnCount: 1,
   }
 
   componentWillReceiveProps(nextProps) {
@@ -68,7 +72,7 @@ export default class WithSelection extends PureComponent {
       this.handleSelection({
         selection: selection.indexOf(id) !== -1 ?
           removeFromSelection({ selection, id }) :
-          addToSelection({ selection, id })
+          addToSelection({ selection, ids: [id] })
       });
     } else if (event.shiftKey) {
       this.rangeSelectionStartedAt = this.rangeSelectionStartedAt || (selection.length === 1 && selection[0]);
@@ -103,7 +107,7 @@ export default class WithSelection extends PureComponent {
   handleKeyDown = e => {
     e.preventDefault();
 
-    const { items, onKeyDown, idPropName, selection } = this.props;
+    const { items, onKeyDown, idPropName, selection, viewMode, columnCount } = this.props;
 
     // Debounce frequent events for performance reasons
     const keyDownTime = new Date().getTime();
@@ -113,83 +117,155 @@ export default class WithSelection extends PureComponent {
     this.lastKeyDownTime = keyDownTime;
 
     if (onKeyDown) {
-      onKeyDown(e)
+      onKeyDown(e);
     }
 
-    if (e.which === 38 && !e.shiftKey) { // Up arrow
-      if (!items.length) {
-        return
-      }
+    // Up arrow in list mode or Left arrow in grid mode
+    if ((e.which === 38 && viewMode === 'list' || e.which === 37 && viewMode === 'grid') && !e.shiftKey) {
+      if (!items.length)
+        return;
 
       if (!selection.length) {
         this.handleSelectEvent(selectLastItem({ items }));
       } else {
-        this.handleSelectEvent(selectPrev({ items, lastSelected: this.lastSelected }));
+        this.handleSelectEvent(selectPrev({ items, lastSelected: this.lastSelected, count: 1 }));
       }
     }
 
-    if (e.which === 40 && !e.shiftKey) { // Down arrow
-      if (!items.length) {
+    // Down arrow in list mode or Right arrow in grid mode
+    if ((e.which === 40 && viewMode === 'list' || e.which === 39 && viewMode === 'grid') && !e.shiftKey) {
+      if (!items.length)
         return;
-      }
 
       if (!selection.length) {
-        this.handleSelectEvent(selectFirstItem({ items }))
+        this.handleSelectEvent(selectFirstItem({ items }));
       } else {
-        this.handleSelectEvent(selectNext({ items, lastSelected: this.lastSelected }))
+        this.handleSelectEvent(selectNext({ items, lastSelected: this.lastSelected, count: 1 }));
       }
     }
 
-    if (e.which === 38 && e.shiftKey) { // Up arrow holding Shift key
-      if (!items.length) {
+    // Up arrow in grid mode
+    if (e.which === 38 && viewMode === 'grid' && !e.shiftKey) {
+      if (!items.length)
         return;
-      }
 
       if (!selection.length) {
-        this.handleSelectEvent(selectLastItem({ items }))
+        this.handleSelectEvent(selectLastItem({ items }));
+      } else {
+        this.handleSelectEvent(selectPrev({ items, lastSelected: this.lastSelected, count: columnCount }));
+      }
+    }
+
+    // Down arrow in grid mode
+    if (e.which === 40 && viewMode === 'grid' && !e.shiftKey) {
+      if (!items.length)
+        return;
+
+      if (!selection.length) {
+        this.handleSelectEvent(selectFirstItem({ items }));
+      } else {
+        this.handleSelectEvent(selectNext({ items, lastSelected: this.lastSelected, count: columnCount }));
+      }
+    }
+
+    // Up arrow in list mode or Left arrow in grid mode holding Shift key
+    if ((e.which === 38 && viewMode === 'list' || e.which === 37 && viewMode === 'grid') && e.shiftKey) {
+      if (!items.length)
+        return;
+
+      if (!selection.length) {
+        this.handleSelectEvent(selectLastItem({ items }));
         return;
       }
 
-      const fromIdIndex = findIndex(items, item => item[idPropName] === this.lastSelected);
+      if (this.lastSelected === items[0].id)
+        return;
+
+      const fromIdIndex = findIndex(items, item => item.id === this.lastSelected);
       const nextIdIndex = fromIdIndex > 0 ? fromIdIndex - 1 : 0;
-      const nextId = items[nextIdIndex][idPropName];
+      const nextId = items[nextIdIndex].id;
       const selectionDirection = selection.indexOf(nextId) === -1 ? -1 : 1;
 
-      if (this.lastSelected === items[0][idPropName]) {
-        return
-      }
-
-      const selectionData = selectionDirection === -1 ?
-        addPrevToSelection({ selection, items, lastSelected: this.lastSelected }) :
-        removeLastFromSelection({ selection, items });
+      const selectionData = selectionDirection === -1
+        ? addPrevToSelection({ selection, items, lastSelected: this.lastSelected, count: 1 })
+        : removeLastFromSelection({ selection, items, count: 1 });
 
       this.handleSelectEvent(selectionData);
     }
 
-    if (e.which === 40 && e.shiftKey) { // Down arrow holding Shift key
-      if (!items.length) {
-        return
-      }
+    // Down arrow in list mode or Right arrow in grid mode holding Shift key
+    if ((e.which === 40 && viewMode === 'list' || e.which === 39 && viewMode === 'grid') && e.shiftKey) {
+      if (!items.length)
+        return;
 
       if (!selection.length) {
         this.handleSelectEvent(selectFirstItem({ items }));
-        return
+        return;
       }
 
-      const fromIdIndex = findIndex(items, item => item[idPropName] === this.lastSelected);
+      if (this.lastSelected === items[items.length - 1].id)
+        return;
+
+      const fromIdIndex = findIndex(items, item => item.id === this.lastSelected);
       const nextIdIndex = fromIdIndex + 1 < items.length ? fromIdIndex + 1 : items.length - 1;
-      const nextId = items[nextIdIndex][idPropName];
+      const nextId = items[nextIdIndex].id;
       const selectionDirection = selection.indexOf(nextId) === -1 ? -1 : 1;
 
-      if (this.lastSelected === items[items.length - 1][idPropName]) {
-        return
+      const selectionData = selectionDirection === -1
+        ? addNextToSelection({ selection, items, lastSelected: this.lastSelected, count: 1 })
+        : removeFirstFromSelection({ selection, items, count: 1 });
+
+      this.handleSelectEvent(selectionData);
+    }
+
+    // Up arrow in grid mode holding Shift key
+    if (e.which === 38 && viewMode === 'grid' && e.shiftKey) {
+      if (!items.length)
+        return;
+
+      if (!selection.length) {
+        this.handleSelectEvent(selectLastItem({ items }));
+        return;
       }
 
-      const selectionData = selectionDirection === -1 ?
-        addNextToSelection({ selection, items, lastSelected: this.lastSelected }) :
-        removeFirstFromSelection({ selection, items });
+      if (this.lastSelected === items[0].id)
+        return;
 
-      this.handleSelectEvent(selectionData)
+      const fromIdIndex = findIndex(items, item => item.id === this.lastSelected);
+      const nextIdIndex = fromIdIndex - columnCount > 0 ? fromIdIndex - columnCount : 0;
+      const nextId = items[nextIdIndex].id;
+      const selectionDirection = selection.indexOf(nextId) === -1 ? -1 : 1;
+
+      const selectionData = selectionDirection === -1
+        ? addPrevToSelection({ selection, items, lastSelected: this.lastSelected, count: columnCount })
+        : removeLastFromSelection({ selection, items, count: columnCount });
+
+      this.handleSelectEvent(selectionData);
+    }
+
+    // Down arrow in grid mode holding Shift key
+    if (e.which === 40 && viewMode === 'grid' && e.shiftKey) {
+      if (!items.length)
+        return;
+
+      if (!selection.length) {
+        this.handleSelectEvent(selectFirstItem({ items }));
+        return;
+      }
+
+      if (this.lastSelected === items[items.length - 1].id)
+        return;
+
+      const fromIdIndex = findIndex(items, item => item.id === this.lastSelected);
+      const nextIdIndex = fromIdIndex + columnCount < items.length ? fromIdIndex + columnCount : items.length - 1;
+      const nextId = items[nextIdIndex].id;
+      const selectionDirection = selection.indexOf(nextId) === -1 ? -1 : 1;
+
+      const selectionData = selectionDirection === -1
+        ? addNextToSelection({ selection, items, lastSelected: this.lastSelected, count: columnCount })
+        : removeFirstFromSelection({ selection, items, count: columnCount });
+
+      this.handleSelectEvent(selectionData);
     }
 
     if (e.which === 65 && (e.ctrlKey || e.metaKey)) { // Ctrl + A or Command + A

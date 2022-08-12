@@ -3,13 +3,15 @@ import { findIndex } from 'lodash';
 export const
   isDef = thing => thing !== undefined,
 
-  noop = _ => {},
+  noop = _ => { },
 
-  addToSelection = ({ selection, id, toHead = false }) => selection.indexOf(id) === -1 ?
-    toHead ?
-      [id, ...selection] :
-      [...selection, id] :
-    selection,
+  addToSelection = ({ selection, ids, toHead = false }) => {
+    const filteredIds = ids.filter(id => !selection.includes(id));
+
+    return toHead
+      ? [...filteredIds, ...selection]
+      : [...selection, ...filteredIds];
+  },
 
   removeFromSelection = ({ selection, id }) => selection.filter(sid => sid !== id),
 
@@ -28,17 +30,18 @@ export const
     return selection
   },
 
-  selectNext = ({ items, lastSelected: currentId }) => {
+  selectNext = ({ items, lastSelected: currentId, count }) => {
     const currentIndex = findIndex(items, ({ id }) => id === currentId);
-    const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : currentIndex;
+    const nextIndex = currentIndex + count < items.length ? currentIndex + count : currentIndex;
     const nextId = items[nextIndex].id;
+
     return {
       selection: [nextId],
-      scrollToIndex: nextIndex
+      scrollToIndex: nextIndex,
     };
   },
 
-  selectPrev = ({ items, lastSelected: currentId }) => {
+  selectPrev = ({ items, lastSelected: currentId, count }) => {
     const currentIndex = findIndex(items, ({ id }) => id === currentId);
 
     if (currentIndex <= -1) {
@@ -48,57 +51,69 @@ export const
       }
     }
 
-    const prevIndex = currentIndex === 0 ? currentIndex : currentIndex - 1;
+    const prevIndex = currentIndex - count < 0 ? currentIndex : currentIndex - count;
     const prevId = items[prevIndex].id;
+
     return {
       selection: [prevId],
-      scrollToIndex: prevIndex
+      scrollToIndex: prevIndex,
     }
   },
 
-  addNextToSelection = ({ selection, items, lastSelected }) => {
-    const nextSelectionData = selectNext({ items, lastSelected });
+  addNextToSelection = ({ selection, items, lastSelected, count }) => {
+    const nextSelectionData = selectNext({ items, lastSelected, count });
+
     return {
-      selection: addToSelection({ selection, id: nextSelectionData.selection[0] }),
-      scrollToIndex: nextSelectionData.scrollToIndex
+      selection: addToSelection({
+        selection,
+        ids: selectRange({ items, fromId: lastSelected, toId: nextSelectionData.selection[0] }),
+      }),
+      scrollToIndex: nextSelectionData.scrollToIndex,
     }
   },
 
-  addPrevToSelection = ({ selection, items, lastSelected }) => {
-    const prevSelectionData = selectPrev({ items, lastSelected });
+  addPrevToSelection = ({ selection, items, lastSelected, count }) => {
+    const prevSelectionData = selectPrev({ items, lastSelected, count });
+
     return {
-      selection: addToSelection({ selection, id: prevSelectionData.selection[0], toHead: true }),
-      scrollToIndex: prevSelectionData.scrollToIndex
+      selection: addToSelection({
+        selection,
+        ids: selectRange({ items, fromId: lastSelected, toId: prevSelectionData.selection[0] }),
+        toHead: true,
+      }),
+      scrollToIndex: prevSelectionData.scrollToIndex,
     }
   },
 
-  removeLastFromSelection = ({ selection, items }) => {
+  removeLastFromSelection = ({ selection, items, count }) => {
     if (selection.length > 1) {
-      const nextSelection = selection.slice(0, selection.length - 1);
+      const nextSelection = selection.slice(0, selection.length - count);
+
       return {
         selection: nextSelection,
         scrollToIndex: findIndex(items, ({ id }) => id === nextSelection[nextSelection.length - 1])
       }
-    } else {
-      return {
-        selection,
-        scrollToIndex: findIndex(items, ({ id }) => id === selection[0])
-      }
+    }
+
+    return {
+      selection,
+      scrollToIndex: findIndex(items, ({ id }) => id === selection[0])
     }
   },
 
-  removeFirstFromSelection = ({ selection, items }) => {
+  removeFirstFromSelection = ({ selection, items, count }) => {
     if (selection.length > 1) {
-      const nextSelection = selection.slice(1);
+      const nextSelection = selection.slice(count);
+
       return {
         selection: nextSelection,
         scrollToIndex: findIndex(items, ({ id }) => id === nextSelection[0])
       }
-    } else {
-      return {
-        selection,
-        scrollToIndex: findIndex(items, ({ id }) => id === selection[0])
-      }
+    }
+
+    return {
+      selection,
+      scrollToIndex: findIndex(items, ({ id }) => id === selection[0])
     }
   },
 

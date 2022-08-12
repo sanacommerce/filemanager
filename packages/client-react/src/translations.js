@@ -3,7 +3,9 @@ const translations = {
     'common.Toolbar.moveForward': 'Move forward',
     'common.Toolbar.moveBack': 'Move back',
     'common.NoFilesFoundStub.nothingToShow': 'There are no data to display',
-    'common.NoFilesFoundStub.useContextMenu': 'Use toolbar or context menu to perform available actions'
+    'common.NoFilesFoundStub.useContextMenu': 'Use toolbar or context menu to perform available actions',
+    'common.Toolbar.listView': 'List view',
+    'common.Toolbar.gridView': 'Grid view',
   },
   fr: {
     'common.Toolbar.moveForward': 'Avancer',

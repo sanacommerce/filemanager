@@ -1,0 +1,40 @@
+@keyframes keyframes-oc-fm--grid-view-row-appearing {
+  0% { opacity: 0; }
+  100% { opacity: 1 }
+}
+
+.oc-fm--grid-view {
+  will-change: opacity;
+  height: 100%;
+  width: 100%;
+}
+
+.oc-fm--grid-view__table {
+  color: #424242;
+}
+
+.oc-fm--grid-view__row {
+  &:hover:not(&--selected):not(&--loading) {
+    background-color: #f5f5f5;
+  }
+
+  &:hover:not(&--selected) .oc-fm--name-cell__icon {
+    background-color: transparent;
+  }
+
+  animation: keyframes-oc-fm--grid-view-row-appearing 150ms;
+  animation-timing-function: ease-in-out;
+}
+
+.oc-fm--grid-view__row--selected {
+  position: relative;
+  background-color: #2196F3;
+  color: #fff;
+  border-bottom-color: transparent;
+}
+
+.oc-fm--grid-view .ReactVirtualized__Table__row {
+  &:focus {
+    outline: none;
+  }
+}
