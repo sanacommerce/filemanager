@@ -8,7 +8,7 @@
     "lerna": "2.8.0"
   },
   "name": "@opuscapita/filemanager-packages",
-  "verion": "1.1.13",
+  "version": "1.1.13",
   "private": true,
   "npmClientArgs": [
     "--no-lockfile"
