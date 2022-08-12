@@ -5,6 +5,6 @@
   "license": "Apache-2.0",
   "repository": "OpusCapita/react-filemanager",
   "scripts": {
-    "build": "cd packages/client-react & npm run build"
+    "build": "cd packages/client-react & npm i & npm run build"
   }
 }
