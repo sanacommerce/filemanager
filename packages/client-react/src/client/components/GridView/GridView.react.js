@@ -230,6 +230,7 @@ export default class GridView extends Component {
                           onRowDoubleClick,
                           itemComponent: rawToReactElement(cellRenderer({ ...layoutOptions, loading, width, height })),
                           columnCount,
+                          loading,
                         })}
                         columnWidth={COLUMN_WIDTH}
                         noContentRenderer={() => <NoFilesFoundStub locale={this.props.locale} />}

@@ -18,6 +18,7 @@ class Cell extends Component {
       selection,
       contextMenuId,
       hasTouch,
+      loading,
     } = this.props;
     /* eslint-enable react/prop-types */
     const rowData = items[rowIndex * columnCount + columnIndex];
@@ -45,7 +46,7 @@ class Cell extends Component {
       <ContextMenuTrigger id={contextMenuId} holdToDisplay={hasTouch ? 1000 : -1}>
         <div
           {...divProps}
-          className={`ReactVirtualized__Table__row oc-fm--grid-view__row${isSelected ? ' oc-fm--grid-view__row--selected' : ''}`}
+          className={`ReactVirtualized__Table__row oc-fm--grid-view__row${loading ? ' oc-fm--grid-view__row--loading' : ''}${isSelected ? ' oc-fm--grid-view__row--selected' : ''}`}
           style={style}
         >
           <ItemComponent item={rowData} />
@@ -64,6 +65,7 @@ export default ({
   onRowDoubleClick,
   itemComponent,
   columnCount,
+  loading,
 }) => props => (
   <Cell
     {...props}
@@ -75,5 +77,6 @@ export default ({
     onRowDoubleClick={onRowDoubleClick}
     itemComponent={itemComponent}
     columnCount={columnCount}
+    loading={loading}
   />
 );
