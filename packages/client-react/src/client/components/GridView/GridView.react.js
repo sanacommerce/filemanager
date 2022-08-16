@@ -14,8 +14,8 @@ import rawToReactElement from '../raw-to-react-element';
 import WithSelection from '../withSelectionHOC';
 import { isDef } from '../withSelectionHOC/utils';
 
-const ROW_HEIGHT = 150;
-const COLUMN_WIDTH = 120;
+const ROW_HEIGHT = 210;
+const COLUMN_WIDTH = 197;
 const SCROLL_STRENGTH = ROW_HEIGHT;
 const HAS_TOUCH = detectIt.deviceType === 'hasTouch';
 
