@@ -8,9 +8,9 @@ import detectIt from 'detect-it';
 import { AutoSizer, Grid } from 'react-virtualized';
 import { ContextMenuTrigger } from "react-contextmenu";
 import NoFilesFoundStub from '../NoFilesFoundStub';
-import Cell from './Cell.react';
+import GridCell from './GridCell.react';
+import Cell from '../Cell';
 import ScrollOnMouseOut from '../ScrollOnMouseOut';
-import rawToReactElement from '../raw-to-react-element';
 import WithSelection from '../withSelectionHOC';
 import { isDef } from '../withSelectionHOC/utils';
 
@@ -29,7 +29,7 @@ const propTypes = {
     size: PropTypes.number,
     modifyDate: PropTypes.number
   })),
-  cellRenderer: PropTypes.func,
+  cellRenderer: PropTypes.func.isRequired,
   layoutOptions: PropTypes.object,
   selection: PropTypes.arrayOf(PropTypes.string),
   loading: PropTypes.bool,
@@ -46,7 +46,6 @@ const defaultProps = {
   rowContextMenuId: nanoid(),
   filesViewContextMenuId: nanoid(),
   items: [],
-  cellRenderer: () => { },
   layoutOptions: {},
   selection: [],
   loading: false,
@@ -220,7 +219,7 @@ export default class GridView extends Component {
                         onScroll={this.handleScroll}
                         scrollToRow={scrollToIndex ? Math.floor(scrollToIndex / columnCount) : 0}
                         scrollTop={scrollTop}
-                        cellRenderer={Cell({
+                        cellRenderer={GridCell({
                           items: itemsToRender,
                           selection,
                           contextMenuId: rowContextMenuId,
@@ -228,7 +227,7 @@ export default class GridView extends Component {
                           onRowClick,
                           onRowRightClick,
                           onRowDoubleClick,
-                          itemComponent: rawToReactElement(cellRenderer({ ...layoutOptions, loading, width, height })),
+                          cellContentRenderer: Cell({ ...layoutOptions, loading, width, height, getData: cellRenderer }),
                           columnCount,
                         })}
                         columnWidth={COLUMN_WIDTH}

@@ -30,6 +30,7 @@ const propTypes = {
   locale: PropTypes.string,
   viewMode: PropTypes.string.isRequired,
   onViewModeChange: PropTypes.func.isRequired,
+  gridModeSupported: PropTypes.bool,
 };
 const defaultProps = {
   history: [],
@@ -77,6 +78,7 @@ export default
       history,
       viewMode,
       onViewModeChange,
+      gridModeSupported,
       onMoveBackward, // eslint-disable-line no-unused-vars
       onMoveForward // eslint-disable-line no-unused-vars
     } = this.props;
@@ -190,7 +192,7 @@ export default
       </div>
     );
 
-    const viewLayoutButtons = (
+    const viewLayoutButtons = gridModeSupported && (
       <div className="oc-fm--toolbar__items">
         <button
           type="button"

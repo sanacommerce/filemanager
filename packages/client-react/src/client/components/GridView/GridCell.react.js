@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { ContextMenuTrigger } from "react-contextmenu";
 
-class Cell extends Component {
+class GridCell extends Component {
   render() {
     /* eslint-disable  react/prop-types */
     const {
@@ -11,7 +11,7 @@ class Cell extends Component {
       onRowClick,
       onRowDoubleClick,
       onRowRightClick,
-      itemComponent: ItemComponent,
+      cellContentRenderer,
       columnCount,
       style,
       items,
@@ -40,40 +40,21 @@ class Cell extends Component {
     }
 
     const isSelected = selection.indexOf(rowData.id) !== -1;
+    const itemComponent = cellContentRenderer({ item: rowData }, rowData.id);
 
     return (
       <ContextMenuTrigger id={contextMenuId} holdToDisplay={hasTouch ? 1000 : -1}>
         <div
           {...divProps}
           className={`ReactVirtualized__Table__row oc-fm--grid-view__row${isSelected ? ' oc-fm--grid-view__row--selected' : ''}`}
+          role="gridcell"
           style={style}
         >
-          <ItemComponent item={rowData} />
+          {itemComponent}
         </div>
       </ContextMenuTrigger>
     );
   }
 }
 
-export default ({
-  items,
-  selection,
-  contextMenuId,
-  onRowClick,
-  onRowRightClick,
-  onRowDoubleClick,
-  itemComponent,
-  columnCount,
-}) => props => (
-  <Cell
-    {...props}
-    items={items}
-    selection={selection}
-    contextMenuId={contextMenuId}
-    onRowClick={onRowClick}
-    onRowRightClick={onRowRightClick}
-    onRowDoubleClick={onRowDoubleClick}
-    itemComponent={itemComponent}
-    columnCount={columnCount}
-  />
-);
+export default args => props => <GridCell {...props} {...args} />;

@@ -6,7 +6,6 @@ import clickOutside from 'react-click-outside';
 import { find, isEqual } from 'lodash';
 import ListView from '../ListView';
 import GridView from '../GridView';
-import defaultGridCellRenderer from '../GridView/gridCellRenderer';
 import LocationBar from '../LocationBar';
 import Notifications from '../Notifications';
 import Toolbar from '../Toolbar';
@@ -36,7 +35,8 @@ const propTypes = {
   onResourceLocationChange: PropTypes.func,
   onSelectionChange: PropTypes.func,
   onResourceChange: PropTypes.func,
-  onResourceChildrenChange: PropTypes.func
+  onResourceChildrenChange: PropTypes.func,
+  onResourceViewModeChange: PropTypes.func,
 };
 
 const defaultProps = {
@@ -49,7 +49,6 @@ const defaultProps = {
   className: '',
   initialResourceId: '',
   listViewLayout: () => { },
-  gridCellRenderer: defaultGridCellRenderer,
   viewLayoutOptions: {},
   signInRenderer: null,
   onClickOutside: ({ fileNavigator }) => fileNavigator.handleSelectionChange([]),
@@ -251,7 +250,10 @@ export default class FileNavigator extends Component {
   }
 
   getResourceViewMode(resource) {
-    const { api, apiOptions } = this.props;
+    const { api, apiOptions, gridCellRenderer } = this.props;
+
+    if (!gridCellRenderer)
+      return 'list';
 
     return api.getResourceViewMode
       ? api.getResourceViewMode(apiOptions, resource)
@@ -432,7 +434,7 @@ export default class FileNavigator extends Component {
       listViewLayout,
       gridCellRenderer,
       signInRenderer,
-      viewLayoutOptions
+      viewLayoutOptions,
     } = this.props;
 
     const {
@@ -491,12 +493,9 @@ export default class FileNavigator extends Component {
       onRowRightClick: this.handleResourceItemRightClick,
       onRowDoubleClick: this.handleResourceItemDoubleClick,
       onSelection: this.handleSelectionChange,
-      onSort: this.handleSort,
       onRef: this.handleViewRef,
       loading: loadingView,
       selection,
-      sortBy,
-      sortDirection,
       items: resourceChildren,
       layoutOptions: viewLayoutOptions,
       locale: apiOptions.locale,
@@ -521,6 +520,7 @@ export default class FileNavigator extends Component {
             locale={apiOptions.locale}
             viewMode={this.state.viewMode}
             onViewModeChange={this.handleViewModeChange}
+            gridModeSupported={!!gridCellRenderer}
           />
         </div>
         <div className="oc-fm--file-navigator__view">
@@ -531,7 +531,13 @@ export default class FileNavigator extends Component {
               </GridView>
             )
             : (
-              <ListView {...viewProps} layout={listViewLayout}>
+              <ListView
+                {...viewProps}
+                onSort={this.handleSort}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                layout={listViewLayout}
+              >
                 <Notifications className="oc-fm--file-navigator__notifications" notifications={notifications} />
               </ListView>
             )
