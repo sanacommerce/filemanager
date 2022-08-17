@@ -47,6 +47,10 @@
 }
 
 .oc-fm--grid-view__row {
+  animation: keyframes-oc-fm--grid-view-row-appearing 150ms;
+  animation-timing-function: ease-in-out;
+  display: block;
+
   &:hover:not(&--selected):not(&--loading) {
     background-color: #f5f5f5;
   }
@@ -55,9 +59,32 @@
     background-color: transparent;
   }
 
-  animation: keyframes-oc-fm--grid-view-row-appearing 150ms;
-  animation-timing-function: ease-in-out;
-  display: block;
+  &--loading {
+    pointer-events: none;
+  }
+
+  .oc-fm--loading-cell {
+    padding: 0.5em;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+
+    &:before {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 48px;
+      margin: auto;
+      background: #f5f5f5;
+    }
+
+    &__content {
+      width: 100%;
+      overflow: hidden;
+    }
+  }
 }
 
 .oc-fm--grid-view__row--selected {

@@ -229,6 +229,7 @@ export default class GridView extends Component {
                           onRowDoubleClick,
                           cellContentRenderer: Cell({ ...layoutOptions, loading, width, height, getData: cellRenderer }),
                           columnCount,
+                          loading,
                         })}
                         columnWidth={COLUMN_WIDTH}
                         noContentRenderer={() => <NoFilesFoundStub locale={this.props.locale} />}
