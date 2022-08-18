@@ -1,3 +1,5 @@
+import { hideMenu as hideContextMenu } from 'react-contextmenu/modules/actions';
+
 // Here should be CommonJS component exports.
 
 module.exports = {
@@ -10,5 +12,6 @@ module.exports = {
   NotificationProgressItem: require('./components/NotificationProgressItem').default,
   ProgressIcon: require('./components/ProgressIcon').default,
   SetNameDialog: require('./components/SetNameDialog').default,
-  notifUtils: require('./components/Notifications/utils').default
+  notifUtils: require('./components/Notifications/utils').default,
+  hideContextMenu,
 };
