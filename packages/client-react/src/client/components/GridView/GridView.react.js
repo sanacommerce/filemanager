@@ -215,7 +215,7 @@ export default class GridView extends Component {
                         rowCount={Math.ceil(itemsToRender.length / columnCount)}
                         rowHeight={ROW_HEIGHT}
                         className="oc-fm--grid-view__table"
-                        overscanRowCount={4}
+                        overscanRowCount={3}
                         onScroll={this.handleScroll}
                         scrollToRow={scrollToIndex ? Math.floor(scrollToIndex / columnCount) : 0}
                         scrollTop={scrollTop}
