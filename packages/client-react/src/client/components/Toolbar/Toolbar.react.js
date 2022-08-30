@@ -27,17 +27,22 @@ const propTypes = {
   }),
   onMoveBackward: PropTypes.func,
   onMoveForward: PropTypes.func,
-  locale: PropTypes.string
+  locale: PropTypes.string,
+  viewMode: PropTypes.string.isRequired,
+  onViewModeChange: PropTypes.func.isRequired,
+  gridModeSupported: PropTypes.bool,
 };
 const defaultProps = {
   history: [],
   items: [],
   newButtonItems: [],
-  locale: 'en'
+  locale: 'en',
 };
 
+const ICON_COLOR = '#424242';
+
 export default
-class Toolbar extends Component {
+  class Toolbar extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -71,6 +76,9 @@ class Toolbar extends Component {
       newButtonItems,
       newButtonText,
       history,
+      viewMode,
+      onViewModeChange,
+      gridModeSupported,
       onMoveBackward, // eslint-disable-line no-unused-vars
       onMoveForward // eslint-disable-line no-unused-vars
     } = this.props;
@@ -86,12 +94,12 @@ class Toolbar extends Component {
             disabled={item.disabled}
             className={`oc-fm--toolbar__item`}
             title={item.label || ''}
-            onClick={(!item.disabled && item.onClick) || (() => {})}
+            onClick={(!item.disabled && item.onClick) || (() => { })}
           >
             <Svg
               className="oc-fm--toolbar__item-icon"
               svg={item.icon && item.icon.svg}
-              style={{ fill: (item.icon && item.icon.fill) || '#424242' }}
+              style={{ fill: (item.icon && item.icon.fill) || ICON_COLOR }}
             />
           </button>
         ))}
@@ -114,18 +122,18 @@ class Toolbar extends Component {
         disabled={item.disabled}
         className={`oc-fm--toolbar__item`}
         title={item.label || ''}
-        onClick={(!item.disabled && item.onClick) || (() => {})}
+        onClick={(!item.disabled && item.onClick) || (() => { })}
       >
         <Svg
           className="oc-fm--toolbar__item-icon"
           svg={item.icon && item.icon.svg}
-          style={{ fill: (item.icon && item.icon.fill) || '#424242' }}
+          style={{ fill: (item.icon && item.icon.fill) || ICON_COLOR }}
         />
       </button>
     ));
 
     const dropdownMenuItems = newButtonItems.map((item, i) => (
-      <DropdownMenuItem key={i} icon={item.icon} onClick={item.onClick || (() => {})}>
+      <DropdownMenuItem key={i} icon={item.icon} onClick={item.onClick || (() => { })}>
         <span>{item.label}</span>
       </DropdownMenuItem>
     ));
@@ -164,7 +172,7 @@ class Toolbar extends Component {
           <Svg
             className="oc-fm--toolbar__item-icon"
             svg={icons.moveBackward}
-            style={{ fill: '#424242' }}
+            style={{ fill: ICON_COLOR }}
           />
         </button>
 
@@ -178,7 +186,38 @@ class Toolbar extends Component {
           <Svg
             className="oc-fm--toolbar__item-icon"
             svg={icons.moveForward}
-            style={{ fill: '#424242' }}
+            style={{ fill: ICON_COLOR }}
+          />
+        </button>
+      </div>
+    );
+
+    const viewLayoutButtons = gridModeSupported && (
+      <div className="oc-fm--toolbar__items">
+        <button
+          type="button"
+          disabled={viewMode === 'list'}
+          className="oc-fm--toolbar__item"
+          title={getMessage('common.Toolbar.listView')}
+          onClick={() => onViewModeChange('list')}
+        >
+          <Svg
+            className="oc-fm--toolbar__item-icon"
+            svg={icons.list}
+            style={{ fill: ICON_COLOR }}
+          />
+        </button>
+        <button
+          type="button"
+          disabled={viewMode === 'grid'}
+          className="oc-fm--toolbar__item"
+          title={getMessage('common.Toolbar.gridView')}
+          onClick={() => onViewModeChange('grid')}
+        >
+          <Svg
+            className="oc-fm--toolbar__item-icon"
+            svg={icons.grid}
+            style={{ fill: ICON_COLOR }}
           />
         </button>
       </div>
@@ -187,6 +226,7 @@ class Toolbar extends Component {
     return (
       <div className="oc-fm--toolbar">
         {navButtons}
+        {viewLayoutButtons}
         {newButtonContainer}
         {itemsElement}
       </div>

@@ -1,26 +1,22 @@
+import 'react-virtualized/styles.css';
+import './GridView.less';
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { range } from 'lodash';
 import nanoid from 'nanoid';
 import detectIt from 'detect-it';
-// TBD individual imports from 'react-virtualized' to decrease bundle size?
-// ex. import Table from 'react-virtualized/dist/commonjs/Table'
-import { Table, AutoSizer, SortDirection } from 'react-virtualized';
-import 'react-virtualized/styles.css';
+import { AutoSizer, Grid } from 'react-virtualized';
 import { ContextMenuTrigger } from "react-contextmenu";
-
 import NoFilesFoundStub from '../NoFilesFoundStub';
-import Row from './Row.react';
+import GridCell from './GridCell.react';
+import Cell from '../Cell';
 import ScrollOnMouseOut from '../ScrollOnMouseOut';
-import rawToReactElement from '../raw-to-react-element';
 import WithSelection from '../withSelectionHOC';
 import { isDef } from '../withSelectionHOC/utils';
 
-import './ListView.less';
-
-const ROW_HEIGHT = 38;
-const HEADER_HEIGHT = 38;
-const SCROLL_STRENGTH = 80;
+const ROW_HEIGHT = 210;
+const COLUMN_WIDTH = 197;
+const SCROLL_STRENGTH = ROW_HEIGHT;
 const HAS_TOUCH = detectIt.deviceType === 'hasTouch';
 
 const propTypes = {
@@ -33,18 +29,15 @@ const propTypes = {
     size: PropTypes.number,
     modifyDate: PropTypes.number
   })),
-  layout: PropTypes.func,
+  cellRenderer: PropTypes.func.isRequired,
   layoutOptions: PropTypes.object,
   selection: PropTypes.arrayOf(PropTypes.string),
   loading: PropTypes.bool,
-  sortBy: PropTypes.string,
-  sortDirection: PropTypes.string,
   onRowClick: PropTypes.func,
   onRowRightClick: PropTypes.func,
   onRowDoubleClick: PropTypes.func,
   onScroll: PropTypes.func,
   onSelection: PropTypes.func,
-  onSort: PropTypes.func,
   onKeyDown: PropTypes.func,
   onRef: PropTypes.func,
   locale: PropTypes.string
@@ -53,25 +46,20 @@ const defaultProps = {
   rowContextMenuId: nanoid(),
   filesViewContextMenuId: nanoid(),
   items: [],
-  layout: () => [],
   layoutOptions: {},
   selection: [],
   loading: false,
-  sortBy: 'title',
-  sortDirection: SortDirection.ASC,
   onRowClick: () => { },
   onRowRightClick: () => { },
   onRowDoubleClick: () => { },
   onScroll: () => { },
   onSelection: () => { },
-  onSort: () => { },
   onKeyDown: () => { },
   onRef: () => { },
   locale: 'en'
 };
 
-export default
-  class ListView extends Component {
+export default class GridView extends Component {
   state = {
     scrollToIndex: 0,
     clientHeight: 0,
@@ -146,10 +134,6 @@ export default
     }
   }
 
-  handleSort = ({ sortBy, sortDirection }) => {
-    this.props.onSort({ sortBy, sortDirection });
-  }
-
   handleRowClick = ({ event, index, rowData }) => {
     this.props.onRowClick({ event, index, rowData });
   }
@@ -172,62 +156,51 @@ export default
       rowContextMenuId,
       filesViewContextMenuId,
       items,
-      layout,
+      cellRenderer,
       layoutOptions,
       loading,
       onRef,
-      sortBy,
-      sortDirection
     } = this.props;
-
     const {
       clientHeight,
       scrollTop,
       scrollHeight,
-      scrollToIndex
+      scrollToIndex,
     } = this.state;
-
-    let itemsToRender = null;
-    if (loading && this.containerHeight) {
-      // Generate items for "loading placeholder"
-      const itemsCount = Math.floor(this.containerHeight / ROW_HEIGHT - 1);
-      itemsToRender = range(itemsCount).map(_ => ({}));
-    } else {
-      itemsToRender = items;
-    }
 
     return (
       <AutoSizer>
-        {({ width, height }) => (this.containerHeight = height) && (
+        {({ width, height }) => {
+          this.containerHeight = height;
+          const columnCount = Math.floor((width - 15) / COLUMN_WIDTH);
 
-          <WithSelection
-            items={itemsToRender}
-            onKeyDown={this.handleKeyDown}
-            onSelection={this.handleSelection}
-            onRowClick={this.handleRowClick}
-            onRowRightClick={this.handleRowRightClick}
-            onRowDoubleClick={this.handleRowDoubleClick}
-            selection={this.props.selection}
-            onRef={onRef}
-          >
-            {
-              ({
-                onRowClick,
-                onRowRightClick,
-                onRowDoubleClick,
-                selection,
-                lastSelected
-              }) => (
-                <div
-                  className="oc-fm--list-view"
-                >
+          // Generate items for "loading placeholder"
+          const itemsToRender = loading && height
+            ? range(Math.floor(height / ROW_HEIGHT) * columnCount).map(() => ({}))
+            : items;
+
+          return (
+            <WithSelection
+              items={itemsToRender}
+              onKeyDown={this.handleKeyDown}
+              onSelection={this.handleSelection}
+              onRowClick={this.handleRowClick}
+              onRowRightClick={this.handleRowRightClick}
+              onRowDoubleClick={this.handleRowDoubleClick}
+              selection={this.props.selection}
+              onRef={onRef}
+              viewMode="grid"
+              columnCount={columnCount}
+            >
+              {({ onRowClick, onRowRightClick, onRowDoubleClick, selection }) => (
+                <div className="oc-fm--grid-view">
                   <ScrollOnMouseOut
                     onCursorAbove={this.handleScrollTop}
                     onCursorBellow={this.handleScrollTop}
                     clientHeight={clientHeight}
                     scrollHeight={scrollHeight}
                     scrollTop={scrollTop}
-                    topCaptureOffset={40}
+                    topCaptureOffset={0}
                     bottomCaptureOffset={0}
                     style={{
                       width: `${width}px`,
@@ -235,48 +208,45 @@ export default
                     }}
                   >
                     <ContextMenuTrigger id={filesViewContextMenuId} holdToDisplay={HAS_TOUCH ? 1000 : -1}>
-                      <Table
+                      <Grid
                         width={width}
                         height={height}
-                        rowCount={itemsToRender.length}
-                        rowGetter={({ index }) => itemsToRender[index]}
+                        columnCount={columnCount}
+                        rowCount={Math.ceil(itemsToRender.length / columnCount)}
                         rowHeight={ROW_HEIGHT}
-                        headerHeight={HEADER_HEIGHT}
-                        className="oc-fm--list-view__table"
-                        gridClassName="oc-fm--list-view__grid"
-                        overscanRowCount={10}
+                        className="oc-fm--grid-view__table"
+                        overscanRowCount={3}
                         onScroll={this.handleScroll}
-                        scrollToIndex={scrollToIndex}
+                        scrollToRow={scrollToIndex ? Math.floor(scrollToIndex / columnCount) : 0}
                         scrollTop={scrollTop}
-                        sort={this.handleSort} // eslint-disable-line react/jsx-handler-names
-                        sortBy={sortBy}
-                        sortDirection={sortDirection}
-                        rowRenderer={Row({
-                          selection, lastSelected, loading, contextMenuId: rowContextMenuId, hasTouch: HAS_TOUCH
+                        cellRenderer={GridCell({
+                          items: itemsToRender,
+                          selection,
+                          contextMenuId: rowContextMenuId,
+                          hasTouch: HAS_TOUCH,
+                          onRowClick,
+                          onRowRightClick,
+                          onRowDoubleClick,
+                          cellContentRenderer: Cell({ ...layoutOptions, loading, width, height, getData: cellRenderer }),
+                          columnCount,
+                          loading,
                         })}
-                        noRowsRenderer={() => <NoFilesFoundStub locale={this.props.locale} />}
-                        onRowClick={onRowClick}
-                        onRowRightClick={onRowRightClick}
-                        onRowDoubleClick={onRowDoubleClick}
+                        columnWidth={COLUMN_WIDTH}
+                        noContentRenderer={() => <NoFilesFoundStub locale={this.props.locale} />}
                       >
-                        {layout({ ...layoutOptions, loading, width, height }).map(
-                          (rawLayoutChild, i) => rawToReactElement(rawLayoutChild, i)
-                        )}
-                      </Table>
+                      </Grid>
                     </ContextMenuTrigger>
                   </ScrollOnMouseOut>
                   {this.props.children}
                 </div>
-              )
-            }
-          </WithSelection>
-
-
-        )}
+              )}
+            </WithSelection>
+          );
+        }}
       </AutoSizer>
     );
   }
 }
 
-ListView.propTypes = propTypes;
-ListView.defaultProps = defaultProps;
+GridView.propTypes = propTypes;
+GridView.defaultProps = defaultProps;
